@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarot Card Picker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      background: #050b11;
+    }
+    .left-panel {
+      width: 340px;
+      padding: 16px;
+      border-right: 1px solid #1f2933;
+      background: #f7f7f7;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .board {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      touch-action: none; /* モバイルでのダブルタップズーム等を抑制 */
+    }
+
+    /* テーマ用の光エフェクト枠 */
+    .board::before,
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: -40px;
+      pointer-events: none;
+    }
+
+    /* Night テーマ（デフォルト） */
+    .board.theme-night {
+      background: radial-gradient(circle at top, #31566d, #020617);
+    }
+    .board.theme-night::before {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 60%),
+        radial-gradient(circle at 80% 80%, rgba(147,197,253,0.08), transparent 60%);
+      mix-blend-mode: screen;
+      opacity: 0.5;
+      animation: boardGlow 18s ease-in-out infinite alternate;
+    }
+
+    /* Candle テーマ */
+    .board.theme-candle {
+      background: radial-gradient(circle at top, #3b2f2a, #050304);
+    }
+    .board.theme-candle::before {
+      background:
+        radial-gradient(circle at 15% 20%, rgba(248,250,252,0.06), transparent 60%),
+        radial-gradient(circle at 70% 85%, rgba(248,181,129,0.18), transparent 70%);
+      mix-blend-mode: screen;
+      opacity: 0.55;
+      animation: boardGlow 20s ease-in-out infinite alternate;
+    }
+
+    /* Dawn テーマ */
+    .board.theme-dawn {
+      background: radial-gradient(circle at top, #4f46e5, #020617);
+    }
+    .board.theme-dawn::before {
+      background:
+        radial-gradient(circle at 20% 10%, rgba(244,219,255,0.14), transparent 55%),
+        radial-gradient(circle at 80% 85%, rgba(96,165,250,0.16), transparent 65%);
+      mix-blend-mode: screen;
+      opacity: 0.6;
+      animation: boardGlow 22s ease-in-out infinite alternate;
+    }
+
+    /* たまに走る淡い光の筋 */
+    .board::after {
+      background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255,255,255,0.06),
+        transparent
+      );
+      opacity: 0;
+      transform: translateX(-120%);
+      animation: boardSweep 22s linear infinite;
+    }
+
+    /* Cinematic モードで光少し強め */
+    .cinematic-on .board::before {
+      opacity: 0.8;
+    }
+    .cinematic-on .board::after {
+      opacity: 0.12;
+      animation-duration: 18s;
+    }
+
+    @keyframes boardGlow {
+      0%   { opacity: 0.35; transform: translate3d(0,0,0); }
+      100% { opacity: 0.8;  transform: translate3d(-12px, 8px, 0); }
+    }
+
+    @keyframes boardSweep {
+      0%   { opacity: 0;   transform: translateX(-120%); }
+      5%   { opacity: 0.4; }
+      20%  { opacity: 0;   transform: translateX(20%); }
+      100% { opacity: 0;   transform: translateX(120%); }
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .buttons-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    button.secondary {
+      background: #6b7280;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    textarea {
+      width: 100%;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .small {
+      font-size: 11px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .theme-row,
+    .mode-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .theme-row select {
+      font-size: 12px;
+      padding: 3px 6px;
+    }
+    .mode-row label {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* カード共通 */
+    .card {
+      width: 120px;
+      height: 180px;
+      position: absolute;
+      border-radius: 8px;
+      background-color: #111;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover; /* 裏面用。表は face-up で上書き */
+      /* 光源を左上に想定した影 */
+      box-shadow: 4px 10px 16px rgba(0,0,0,0.85);
+      transform-origin: center center;
+      touch-action: none; /* iPhone でスムーズにドラッグ */
+      cursor: grab;
+      border: 1px solid rgba(255,255,255,0.22);
+      transition: box-shadow 0.12s ease; /* transform にはアニメをかけない */
+    }
+
+    .card.face-down {
+      background-image: linear-gradient(135deg, #555, #111);
+    }
+
+    .card.face-up {
+      background-color: #e9dfc8; /* JS側で微妙に変化させる用 */
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: 1px solid rgba(80,60,30,0.9);
+    }
+
+    /* 紙テクスチャ風オーバーレイ */
+    .card.face-up::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(0,0,0,0.18), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.06));
+      mix-blend-mode: multiply;
+      opacity: 0.28;
+    }
+
+    .card.face-up::after {
+      content: attr(data-name);
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      font-size: 11px;
+      color: #3b2b1a;
+      background: rgba(255,248,235,0.95);
+      padding: 2px 4px;
+      border-radius: 4px;
+      text-align: center;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+
+    /* さりげない「今めくったカード」 */
+    .card.just-revealed {
+      filter: brightness(1.06);
+    }
+
+    /* 選択状態の見た目（束として扱うカード） */
+    .card.selected {
+      outline: 2px solid rgba(251,191,36,0.9);
+      outline-offset: 2px;
+    }
+
+    .instructions {
+      font-size: 11px;
+      color: #444;
+      background: #fff;
+      border-radius: 6px;
+      padding: 6px 8px;
+      border: 1px solid #e5e5e5;
+    }
+
+    /* 墓地ゾーン：右上に移動 */
+    #graveyard {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 360px;
+      height: 190px;
+      border: 2px dashed rgba(148,163,184,0.9);
+      border-radius: 10px;
+      color: #e5e7eb;
+      font-size: 12px;
+      padding: 4px 8px;
+      pointer-events: none; /* カードを掴めるように */
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.8), transparent 70%);
+    }
+    #graveyard span {
+      opacity: 0.85;
+    }
+
+    /* 範囲選択用の矩形 */
+    #selectionBox {
+      position: absolute;
+      border: 1px dashed rgba(251,191,36,0.9);
+      background: rgba(251,191,36,0.12);
+      pointer-events: none;
+      display: none;
+      z-index: 9999;
+    }
+
+    /* スマホレイアウト調整 */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        height: 100vh;
+      }
+      .left-panel {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #1f2933;
+        padding: 12px;
+        gap: 8px;
+      }
+      .board {
+        height: 60vh;
+      }
+      .card {
+        width: 80px;
+        height: 120px;
+      }
+      #graveyard {
+        width: 280px;
+        height: 150px;
+      }
+      textarea {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="left-panel">
+    <h2>タロットカード ピッカー</h2>
+
+    <div class="buttons-row">
+  <button id="refreshListButton">一覧を更新</button>
+  <button id="selectAllButton">一覧を全選択</button>
+  <button id="copyButton">コピー</button>
+  <button id="resetButton" class="secondary">リセット</button>
+</div>
+
+
+    <div class="theme-row">
+      <span>テーマ:</span>
+      <select id="themeSelect">
+        <option value="night">Night</option>
+        <option value="candle">Candle</option>
+        <option value="dawn">Dawn</option>
+      </select>
+    </div>
+    <div class="mode-row">
+      <label>
+        <input type="checkbox" id="cinematicToggle" />
+        Cinematic モード
+      </label>
+    </div>
+
+    <div class="instructions">
+      ・右側の盤面に最初から全78枚のカードが<br/>
+      　左側の一角に山札っぽく固まって配置されています。<br/>
+      ・カードをドラッグ → 物理シャッフルみたいに動かす<br/>
+      ・カードを<strong>ダブルタップ / ダブルクリック</strong> → 表にして採用<br/>
+      　　→ この瞬間に正位置/逆位置がランダムで決まります。<br/>
+      ・範囲ドラッグ or Shift＋クリック → 複数選択（束として移動可）<br/>
+      ・右上の枠にドラッグ → 墓地ゾーンに自動整列（捨て札）<br/>
+      ・リストには「選択されている表のカード」だけが<br/>
+      　選択した順番でリアルタイムに表示されます。
+    </div>
+
+    <div>
+      <label for="cardsOutput">カード一覧（コピー用）</label><br/>
+      <textarea id="cardsOutput" rows="12"
+  placeholder="・愚者（正位置）
+・ワンドのエース（逆位置）"></textarea>
+    </div>
+
+    <div class="small">
+      ※この一覧をそのまま ChatGPT にコピペして、<br/>
+      「このカード一覧でタロットリーディングして」と依頼すればOKです。
+    </div>
+  </div>
+
+  <div id="board" class="board theme-night">
+    <div id="graveyard">
+      <span>墓地ゾーン（使い終わったカード置き場）</span>
+    </div>
+    <div id="selectionBox"></div>
+  </div>
+
+  <script>
+    // ==== フルデッキ 78枚 ====
+
+    const MAJOR_ARCANA = [
+      "愚者","魔術師","女教皇","女帝","皇帝","法王","恋人",
+      "戦車","力","隠者","運命の輪","正義","吊るされた男","死神",
+      "節制","悪魔","塔","星","月","太陽","審判","世界"
+    ];
+
+    const SUITS = [
+      { key: "wands", label: "ワンド" },
+      { key: "cups", label: "カップ" },
+      { key: "swords", label: "ソード" },
+      { key: "pentacles", label: "ペンタクル" }
+    ];
+
+    const RANKS = [
+      { key: "ace", label: "エース" },
+      { key: "2", label: "2" },
+      { key: "3", label: "3" },
+      { key: "4", label: "4" },
+      { key: "5", label: "5" },
+      { key: "6", label: "6" },
+      { key: "7", label: "7" },
+      { key: "8", label: "8" },
+      { key: "9", label: "9" },
+      { key: "10", label: "10" },
+      { key: "page", label: "ペイジ" },
+      { key: "knight", label: "ナイト" },
+      { key: "queen", label: "クイーン" },
+      { key: "king", label: "キング" }
+    ];
+
+    var TAROT_DECK = [];
+
+    // 大アルカナ 22枚
+    MAJOR_ARCANA.forEach(function(name, index) {
+      TAROT_DECK.push({
+        id: "major-" + index,
+        name: name
+      });
+    });
+
+    // 小アルカナ 56枚
+    SUITS.forEach(function(suit) {
+      RANKS.forEach(function(rank) {
+        TAROT_DECK.push({
+          id: suit.key + "-" + rank.key,
+          name: suit.label + "の" + rank.label
+        });
+      });
+    });
+
+    function shuffle(array) {
+      var a = array.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+      }
+      return a;
+    }
+
+    var boardEl = document.getElementById("board");
+    var graveyardEl = document.getElementById("graveyard");
+    var selectionBoxEl = document.getElementById("selectionBox");
+    var cardsOutputEl = document.getElementById("cardsOutput");
+    var resetButton = document.getElementById("resetButton");
+    var selectAllButton = document.getElementById("selectAllButton");
+    var refreshListButton = document.getElementById("refreshListButton");
+    var themeSelect = document.getElementById("themeSelect");
+    var cinematicToggle = document.getElementById("cinematicToggle");
+    var copyButton = document.getElementById("copyButton");
+
+
+    var drawnCards = []; // { id, name, element, faceUp, isReversed, x, y, inGraveyard, imagePath, revealOrder, lastTapTime, baseColor, selected, selectionOrder }
+    var revealCounter = 0;
+    var isCinematic = false;
+
+    // 選択管理
+    var currentSelection = []; // 選択中カードの配列
+    var selectionCounter = 0;  // 選択順管理用
+
+    function updateCardSelectionStyle(cardObj) {
+      if (cardObj.selected) {
+        cardObj.element.classList.add("selected");
+      } else {
+        cardObj.element.classList.remove("selected");
+      }
+    }
+
+    function clearSelection() {
+      currentSelection.forEach(function(c) {
+        c.selected = false;
+        c.selectionOrder = null;
+        updateCardSelectionStyle(c);
+      });
+      currentSelection = [];
+      updateCardsOutput();
+    }
+
+    function addToSelection(cardObj) {
+      if (!cardObj.selected) {
+        cardObj.selected = true;
+        cardObj.selectionOrder = ++selectionCounter;
+        currentSelection.push(cardObj);
+        updateCardSelectionStyle(cardObj);
+        updateCardsOutput();
+      }
+    }
+
+    function removeFromSelection(cardObj) {
+      if (cardObj.selected) {
+        cardObj.selected = false;
+        cardObj.selectionOrder = null;
+        currentSelection = currentSelection.filter(function(c) { return c !== cardObj; });
+        updateCardSelectionStyle(cardObj);
+        updateCardsOutput();
+      }
+    }
+
+    function toggleSelection(cardObj) {
+      if (cardObj.selected) {
+        removeFromSelection(cardObj);
+      } else {
+        addToSelection(cardObj);
+      }
+    }
+
+    // スートごとのグロー色
+    function getSuitGlowColor(id) {
+      if (id.startsWith("wands-")) {
+        return "rgba(249,115,22,0.9)";
+      } else if (id.startsWith("cups-")) {
+        return "rgba(56,189,248,0.9)";
+      } else if (id.startsWith("swords-")) {
+        return "rgba(129,140,248,0.9)";
+      } else if (id.startsWith("pentacles-")) {
+        return "rgba(250,204,21,0.9)";
+      } else if (id.startsWith("major-")) {
+        return "rgba(216,180,254,0.9)";
+      }
+      return null;
+    }
+
+    // スートごとのグロー適用
+    function applySuitGlow(cardObj, cardEl, options) {
+      options = options || {};
+      var highlight = !!options.highlight;
+
+      var glowColor = getSuitGlowColor(cardObj.id || "");
+      var shadows = [];
+
+      if (glowColor) {
+        if (highlight) {
+          shadows.push("0 0 26px " + glowColor);
+          shadows.push("0 0 40px rgba(255,255,255,0.22)");
+        } else {
+          shadows.push("0 0 18px " + glowColor);
+        }
+
+        if (isCinematic) {
+          shadows.push("0 0 40px " + glowColor);
+        }
+      }
+
+      // ベースの落ち影（光源は左上想定）
+      shadows.push("4px 10px 18px rgba(0,0,0,0.9)");
+      cardEl.style.boxShadow = shadows.join(", ");
+    }
+
+    // 「紙」の色の個体差
+    var paperColors = [
+      "#e9dfc8",
+      "#ece2cc",
+      "#e7dac2",
+      "#e5d6ba",
+      "#eadfca"
+    ];
+    function getRandomPaperColor() {
+      return paperColors[Math.floor(Math.random() * paperColors.length)];
+    }
+
+    // ドラッグ中グループの状態
+    var activeDrag = null; // { pointerId, startX, startY, group:[], offsets:[{card,dx,dy}] }
+
+    // 初期化：全カードを盤面の一角に裏向きで「山札」っぽく固めて置く
+    function initCards() {
+      drawnCards = [];
+      currentSelection = [];
+      selectionCounter = 0;
+      revealCounter = 0;
+      activeDrag = null;
+
+      // board の子要素のうち graveyard / selectionBox 以外を削除
+      var children = Array.prototype.slice.call(boardEl.children);
+      children.forEach(function(child) {
+        if (child.id !== "graveyard" && child.id !== "selectionBox") {
+          boardEl.removeChild(child);
+        }
+      });
+
+      var boardRect = boardEl.getBoundingClientRect();
+      var cardsData = shuffle(TAROT_DECK);
+
+      // 山札位置（画面左寄り・中央あたり）
+      var pileCenterX = boardRect.width * 0.22;
+      var pileCenterY = boardRect.height * 0.55;
+
+      cardsData.forEach(function(cardData) {
+        var cardEl = document.createElement("div");
+        cardEl.className = "card face-down";
+
+        // 山札の中心付近にランダムにばらつかせる（山札の束っぽく）
+        var x = pileCenterX + (Math.random() - 0.5) * 60;
+        var y = pileCenterY + (Math.random() - 0.5) * 80;
+
+        cardEl.style.left = x + "px";
+        cardEl.style.top = y + "px";
+
+        // 初期角度はまっすぐ（リアルなデッキ感）
+        cardEl.style.transform = "rotate(0deg)";
+        var baseAngle = 0;
+
+        var cardObj = {
+          id: cardData.id,
+          name: cardData.name,
+          element: cardEl,
+          faceUp: false,
+          isReversed: false,
+          x: x,
+          y: y,
+          inGraveyard: false,
+          imagePath: "img/" + cardData.id + ".png",
+          revealOrder: null,
+          lastTapTime: 0,
+          baseColor: getRandomPaperColor(),
+          selected: false,
+          selectionOrder: null,
+          baseAngle: baseAngle
+        };
+
+        // ===== ダブルタップ / ダブルクリックで表にする（正逆ランダム） =====
+        function revealCard() {
+          if (cardObj.faceUp) return;
+          cardObj.faceUp = true;
+          cardObj.revealOrder = revealCounter++;
+          cardObj.isReversed = Math.random() < 0.5; // 正逆ランダム
+
+          cardEl.classList.remove("face-down");
+          cardEl.classList.add("face-up");
+          cardEl.setAttribute("data-name", cardObj.name);
+          cardEl.style.backgroundImage = "url('" + cardObj.imagePath + "')";
+          cardEl.style.backgroundColor = cardObj.baseColor;
+
+          var angle = cardObj.baseAngle + (cardObj.isReversed ? 180 : 0);
+          cardEl.style.transform = "rotate(" + angle + "deg)";
+
+          // 表にした瞬間、そのカードを自動的に選択（リアルタイムでリスト反映）
+          if (!cardObj.selected) {
+            addToSelection(cardObj);
+          } else {
+            updateCardsOutput();
+          }
+
+          // 表示された瞬間にふわっとフォーカス
+          cardEl.classList.add("just-revealed");
+          applySuitGlow(cardObj, cardEl, { highlight: true });
+
+          setTimeout(function () {
+            cardEl.classList.remove("just-revealed");
+            if (cardObj.faceUp && !cardObj.inGraveyard) {
+              applySuitGlow(cardObj, cardEl, { highlight: false });
+            }
+          }, 900);
+        }
+
+        // pointer イベントでドラッグ & ダブルタップ検知 & 選択操作
+        (function(cardObj, cardEl) {
+          var startX = 0;
+          var startY = 0;
+
+          cardEl.addEventListener("pointerdown", function(e) {
+            if (e.button !== 0 && e.pointerType === "mouse") return; // 右クリック等は無視
+            e.preventDefault();
+
+            // Shift + クリック : 選択のトグル（ドラッグはしない）
+            if (e.shiftKey) {
+              toggleSelection(cardObj);
+              return;
+            }
+
+            // 通常クリック：このカードを単独 or 既存選択の一部として扱う
+            if (!cardObj.selected) {
+              clearSelection();
+              addToSelection(cardObj);
+            }
+
+            var boardRect = boardEl.getBoundingClientRect();
+            var pointerBoardX = e.clientX - boardRect.left;
+            var pointerBoardY = e.clientY - boardRect.top;
+
+            var group = currentSelection.length ? currentSelection.slice() : [cardObj];
+            var offsets = group.map(function(c) {
+              return {
+                card: c,
+                dx: c.x - pointerBoardX,
+                dy: c.y - pointerBoardY
+              };
+            });
+
+            activeDrag = {
+              pointerId: e.pointerId,
+              startX: e.clientX,
+              startY: e.clientY,
+              group: group,
+              offsets: offsets
+            };
+
+            // 束のカードをドラッグ中の影に
+            group.forEach(function(c) {
+              c.element.style.zIndex = Date.now().toString();
+              c.element.style.boxShadow = "4px 14px 24px rgba(0,0,0,0.98)";
+            });
+
+            cardEl.setPointerCapture(e.pointerId);
+          });
+
+          cardEl.addEventListener("pointermove", function(e) {
+            if (!activeDrag || e.pointerId !== activeDrag.pointerId) return;
+            var boardRect = boardEl.getBoundingClientRect();
+            var pointerBoardX = e.clientX - boardRect.left;
+            var pointerBoardY = e.clientY - boardRect.top;
+
+            activeDrag.offsets.forEach(function(o) {
+              var newX = pointerBoardX + o.dx;
+              var newY = pointerBoardY + o.dy;
+              o.card.x = newX;
+              o.card.y = newY;
+              o.card.element.style.left = newX + "px";
+              o.card.element.style.top = newY + "px";
+            });
+          });
+
+          function endPointer(e) {
+            if (!activeDrag || e.pointerId !== activeDrag.pointerId) return;
+
+            var dragState = activeDrag;
+            activeDrag = null;
+
+            try {
+              cardEl.releasePointerCapture(dragState.pointerId);
+            } catch (_) {}
+
+            // タップかドラッグか判定
+            var dx = e.clientX - dragState.startX;
+            var dy = e.clientY - dragState.startY;
+            var dist = Math.sqrt(dx*dx + dy*dy);
+
+            var now = Date.now();
+            var DOUBLE_TAP_THRESHOLD = 300; // ms
+            var TAP_MOVE_THRESHOLD = 10;    // px
+
+            if (dist < TAP_MOVE_THRESHOLD) {
+              // ほぼ同じ場所で指が離れている → タップ扱い
+              if (now - cardObj.lastTapTime < DOUBLE_TAP_THRESHOLD) {
+                // ダブルタップ判定 → このカードだけめくる
+                revealCard();
+                cardObj.lastTapTime = 0;
+              } else {
+                cardObj.lastTapTime = now;
+              }
+            }
+
+            // 墓地ゾーン内かどうか判定（ポインタ位置基準で束ごと）
+            var graveRect = graveyardEl.getBoundingClientRect();
+            var cx = e.clientX;
+            var cy = e.clientY;
+            var inZone =
+              cx >= graveRect.left && cx <= graveRect.right &&
+              cy >= graveRect.top && cy <= graveRect.bottom;
+
+            dragState.group.forEach(function(c) {
+              c.inGraveyard = inZone;
+              if (c.faceUp) {
+                if (!c.inGraveyard) {
+                  applySuitGlow(c, c.element, { highlight: false });
+                } else {
+                  // 墓地のカードは少し落ち着かせた影
+                  c.element.style.boxShadow = "2px 8px 14px rgba(0,0,0,0.85)";
+                }
+              } else {
+                c.element.style.boxShadow = "4px 10px 16px rgba(0,0,0,0.85)";
+              }
+            });
+
+            layoutGraveyard();
+            updateCardsOutput();
+          }
+
+          cardEl.addEventListener("pointerup", endPointer);
+          cardEl.addEventListener("pointercancel", endPointer);
+        })(cardObj, cardEl);
+
+        boardEl.appendChild(cardEl);
+        drawnCards.push(cardObj);
+      });
+    }
+
+    // 墓地ゾーンのレイアウト
+    function layoutGraveyard() {
+      var boardRect = boardEl.getBoundingClientRect();
+      var graveRect = graveyardEl.getBoundingClientRect();
+
+      var gx = graveRect.left - boardRect.left;
+      var gy = graveRect.top - boardRect.top;
+      var gw = graveRect.width;
+
+      var graveCards = drawnCards.filter(function(c) { return c.inGraveyard; });
+
+      if (graveCards.length === 0) return;
+
+      var maxPerRow = Math.max(1, Math.floor(gw / 45));
+      graveCards.forEach(function(c, idx) {
+        var col = idx % maxPerRow;
+        var row = Math.floor(idx / maxPerRow);
+        var x = gx + 8 + col * 24;
+        var y = gy + 30 + row * 34;
+        c.x = x;
+        c.y = y;
+        c.element.style.left = x + "px";
+        c.element.style.top = y + "px";
+      });
+    }
+
+    // カード一覧テキストを更新（「選択されていて」「表で」「墓地にない」カードだけ）
+    function updateCardsOutput() {
+      var faceUpSelected = drawnCards
+        .filter(function(c) {
+          return c.faceUp && c.selected && !c.inGraveyard;
+        })
+        .sort(function(a, b) {
+          return (a.selectionOrder || 0) - (b.selectionOrder || 0);
+        });
+
+      if (faceUpSelected.length === 0) {
+        cardsOutputEl.value = "";
+        return;
+      }
+
+      var lines = faceUpSelected.map(function(c) {
+        var dir = c.isReversed ? "逆位置" : "正位置";
+        return "・" + c.name + "（" + dir + "）";
+      });
+
+      cardsOutputEl.value = lines.join("\n");
+    }
+
+    // 一覧を更新ボタン（明示的に叩けるようにも残しておく）
+    refreshListButton.addEventListener("click", function() {
+      updateCardsOutput();
+    });
+
+    // リセットボタン
+    resetButton.addEventListener("click", function() {
+      cardsOutputEl.value = "";
+      initCards();
+    });
+
+    // 一覧を全選択ボタン
+    selectAllButton.addEventListener("click", function() {
+      cardsOutputEl.focus();
+      cardsOutputEl.select();
+    });
+
+    // コピー用ボタン
+copyButton.addEventListener("click", function() {
+  // まずテキストを選択
+  cardsOutputEl.focus();
+  cardsOutputEl.select();
+
+  // Clipboard API が使えればそっちを使う
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(cardsOutputEl.value)
+      .then(function () {
+        // ここで「コピーしました」的なフィードバックを出したければ追加
+        // 例）copyButton.textContent = "コピー完了！";
+        // setTimeout(function(){ copyButton.textContent = "コピー"; }, 1200);
+      })
+      .catch(function (err) {
+        console.error("Clipboard copy failed: ", err);
+      });
+  } else {
+    // 古いブラウザ向けフォールバック
+    try {
+      document.execCommand("copy");
+      // 同じく、必要ならフィードバックメッセージここで
+    } catch (err) {
+      console.error("execCommand copy failed: ", err);
+    }
+  }
+});
+
+
+    // テーマ切り替え
+    function applyTheme(theme) {
+      boardEl.classList.remove("theme-night", "theme-candle", "theme-dawn");
+      boardEl.classList.add("theme-" + theme);
+    }
+    themeSelect.addEventListener("change", function() {
+      applyTheme(this.value);
+    });
+
+    // Cinematic トグル
+    cinematicToggle.addEventListener("change", function() {
+      isCinematic = this.checked;
+      document.body.classList.toggle("cinematic-on", isCinematic);
+      // すでに表のカードがあれば、光り方を更新
+      drawnCards.forEach(function(c) {
+        if (c.faceUp && !c.inGraveyard) {
+          applySuitGlow(c, c.element, { highlight: false });
+        }
+      });
+    });
+
+    // ===== 範囲選択（ドラッグで矩形選択） =====
+    var isSelecting = false;
+    var selectionStartX = 0;
+    var selectionStartY = 0;
+    var selectionAdditive = false; // Shift 押しながらなら既存選択に追加
+
+    boardEl.addEventListener("pointerdown", function(e) {
+      // board の空き部分をドラッグしたときだけ範囲選択開始
+      if (e.button !== 0) return;
+      if (e.target !== boardEl) return; // カード上でのドラッグは無視
+      e.preventDefault();
+
+      var rect = boardEl.getBoundingClientRect();
+      selectionStartX = e.clientX - rect.left;
+      selectionStartY = e.clientY - rect.top;
+      selectionAdditive = e.shiftKey;
+
+      if (!selectionAdditive) {
+        clearSelection();
+      }
+
+      isSelecting = true;
+      selectionBoxEl.style.display = "block";
+      selectionBoxEl.style.left = selectionStartX + "px";
+      selectionBoxEl.style.top = selectionStartY + "px";
+      selectionBoxEl.style.width = "0px";
+      selectionBoxEl.style.height = "0px";
+
+      boardEl.setPointerCapture(e.pointerId);
+    });
+
+    boardEl.addEventListener("pointermove", function(e) {
+      if (!isSelecting) return;
+      var rect = boardEl.getBoundingClientRect();
+      var currentX = e.clientX - rect.left;
+      var currentY = e.clientY - rect.top;
+
+      var left = Math.min(selectionStartX, currentX);
+      var top = Math.min(selectionStartY, currentY);
+      var width = Math.abs(currentX - selectionStartX);
+      var height = Math.abs(currentY - selectionStartY);
+
+      selectionBoxEl.style.left = left + "px";
+      selectionBoxEl.style.top = top + "px";
+      selectionBoxEl.style.width = width + "px";
+      selectionBoxEl.style.height = height + "px";
+    });
+
+    function finishSelection(e) {
+      if (!isSelecting) return;
+      isSelecting = false;
+      selectionBoxEl.style.display = "none";
+      try {
+        boardEl.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      var rect = boardEl.getBoundingClientRect();
+      var endX = e.clientX - rect.left;
+      var endY = e.clientY - rect.top;
+
+      var left = Math.min(selectionStartX, endX);
+      var top = Math.min(selectionStartY, endY);
+      var right = Math.max(selectionStartX, endX);
+      var bottom = Math.max(selectionStartY, endY);
+
+      // 範囲にかかっているカードを選択
+      drawnCards.forEach(function(c) {
+        var el = c.element;
+        var cw = el.offsetWidth;
+        var ch = el.offsetHeight;
+        var cx1 = c.x;
+        var cy1 = c.y;
+        var cx2 = cx1 + cw;
+        var cy2 = cy1 + ch;
+
+        var intersect = !(cx2 < left || cx1 > right || cy2 < top || cy1 > bottom);
+        if (intersect) {
+          addToSelection(c);
+        }
+      });
+    }
+
+    boardEl.addEventListener("pointerup", finishSelection);
+    boardEl.addEventListener("pointercancel", finishSelection);
+
+    // ページロード時に初期化
+    window.addEventListener("load", function() {
+      applyTheme("night");
+      initCards();
+    });
+  </script>
+</body>
+</html>
