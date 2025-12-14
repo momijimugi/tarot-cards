@@ -832,6 +832,17 @@
       });
     });
 
+    // 盤面に出る前にカード画像をキャッシュしておく
+    var preloadStarted = false;
+    function preloadDeckImages() {
+      if (preloadStarted) return;
+      preloadStarted = true;
+      TAROT_DECK.forEach(function(card) {
+        var img = new Image();
+        img.src = "img/" + card.id + ".png";
+      });
+    }
+
     function shuffle(array) {
       var a = array.slice();
       for (var i = a.length - 1; i > 0; i--) {
@@ -1554,6 +1565,7 @@ copyButton.addEventListener("click", function() {
 
     // ページロード時に初期化
     window.addEventListener("load", function() {
+      preloadDeckImages();
       applyTheme("night");
       rebuildBoard();
       settingsCard.classList.add("hidden");
