@@ -5,87 +5,322 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tarot Card Picker</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <style>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
     * { box-sizing: border-box; }
+    :root {
+      --bg: #050814;
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-strong: rgba(255, 255, 255, 0.12);
+      --stroke: rgba(255, 255, 255, 0.16);
+      --text: #e8edf7;
+      --muted: #b7c1d6;
+      --accent: #9de3ff;
+      --accent-strong: #7ec7ff;
+      --warning: #fbbf24;
+    }
     body {
       margin: 0;
-      padding: 0;
-      display: flex;
+      padding: 18px;
       height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      gap: 18px;
+      font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Sans", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(123, 97, 255, 0.16), transparent 26%),
+        radial-gradient(circle at 80% 4%, rgba(53, 203, 255, 0.18), transparent 28%),
+        radial-gradient(circle at 68% 86%, rgba(255, 186, 120, 0.18), transparent 30%),
+        linear-gradient(145deg, #02050f, #050814 40%, #070a16);
       overflow: hidden;
-      background: #050b11;
     }
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: -120px;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 45%);
+      filter: blur(120px);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+    }
+    body::after {
+      background: radial-gradient(circle, rgba(43,119,255,0.15), transparent 40%);
+      opacity: 0.4;
+      transform: translateY(-10%);
+    }
+
     .left-panel {
-      width: 340px;
-      padding: 16px;
-      border-right: 1px solid #1f2933;
-      background: #f7f7f7;
+      width: 360px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+      backdrop-filter: blur(18px);
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+
+    .title-block {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 12px 28px rgba(0,0,0,0.35);
+    }
+    .title-main {
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #e9f2ff;
+    }
+    .title-sub {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .title-pill {
+      font-size: 11px;
+      color: #0b1625;
+      background: linear-gradient(120deg, #9de3ff, #9bb2ff);
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.08em;
+      box-shadow: 0 6px 18px rgba(157, 227, 255, 0.35);
+    }
+
+    .buttons-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.22);
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(157, 227, 255, 0.26), rgba(155, 178, 255, 0.26));
+      color: var(--text);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      box-shadow:
+        0 14px 30px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.35);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, rgba(157, 227, 255, 0.36), rgba(155, 178, 255, 0.36));
+      box-shadow:
+        0 18px 38px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      color: var(--muted);
+      border-color: rgba(255,255,255,0.16);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: var(--glass);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+    .small {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .theme-row,
+    .mode-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      justify-content: space-between;
+    }
+    .theme-row select {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: var(--glass);
+      color: var(--text);
+      outline: none;
+    }
+    .switch {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      padding: 4px 0;
+      position: relative;
+      cursor: pointer;
+    }
+    .switch input {
+      position: absolute;
+      inset: 0;
+      width: 52px;
+      height: 26px;
+      opacity: 0;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      z-index: 2;
+    }
+    .switch .switch-slider {
+      width: 52px;
+      height: 26px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      border: 1px solid rgba(157,227,255,0.18);
+      border-radius: 999px;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 18px rgba(0,0,0,0.35);
+      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+      pointer-events: none;
+    }
+    .switch .switch-slider::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      width: 18px;
+      height: 18px;
+      background: linear-gradient(145deg, #ffffff, #cbe6ff);
+      border-radius: 50%;
+      box-shadow: 0 8px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.7);
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .switch input:checked + .switch-slider {
+      background: linear-gradient(135deg, rgba(157, 227, 255, 0.32), rgba(155, 178, 255, 0.36));
+      border-color: rgba(157,227,255,0.65);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.24), 0 10px 24px rgba(0,0,0,0.45), 0 0 16px rgba(157,227,255,0.35);
+    }
+    .switch input:checked + .switch-slider::after {
+      transform: translateX(22px);
+      background: linear-gradient(145deg, #0b1625, #1b2a40);
+      box-shadow: 0 10px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .switch input:focus-visible + .switch-slider {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 3px rgba(157,227,255,0.35), 0 8px 18px rgba(0,0,0,0.35);
+    }
+    .switch .switch-label {
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.01em;
+      opacity: 0;
+      white-space: nowrap;
+      pointer-events: none;
+      width: 0;
+      overflow: hidden;
+    }
+
     .board {
       flex: 1;
       position: relative;
+      border-radius: 20px;
       overflow: hidden;
-      touch-action: none; /* モバイルでのダブルタップズーム等を抑制 */
+      touch-action: none;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      box-shadow:
+        0 30px 70px rgba(0,0,0,0.65),
+        inset 0 1px 0 rgba(255,255,255,0.08);
     }
 
-    /* テーマ用の光エフェクト枠 */
     .board::before,
     .board::after {
       content: "";
       position: absolute;
-      inset: -40px;
+      inset: -60px;
       pointer-events: none;
     }
 
-    /* Night テーマ（デフォルト） */
     .board.theme-night {
-      background: radial-gradient(circle at top, #31566d, #020617);
+      background: radial-gradient(circle at top, rgba(60, 97, 125, 0.35), rgba(3, 8, 16, 0.9));
     }
     .board.theme-night::before {
       background:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 60%),
-        radial-gradient(circle at 80% 80%, rgba(147,197,253,0.08), transparent 60%);
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,0.08), transparent 60%),
+        radial-gradient(circle at 80% 82%, rgba(147,197,253,0.14), transparent 60%);
       mix-blend-mode: screen;
-      opacity: 0.5;
+      opacity: 0.6;
       animation: boardGlow 18s ease-in-out infinite alternate;
+      filter: blur(2px);
     }
 
-    /* Candle テーマ */
     .board.theme-candle {
-      background: radial-gradient(circle at top, #3b2f2a, #050304);
+      background: radial-gradient(circle at top, rgba(84, 58, 46, 0.38), rgba(10, 5, 4, 0.92));
     }
     .board.theme-candle::before {
       background:
-        radial-gradient(circle at 15% 20%, rgba(248,250,252,0.06), transparent 60%),
-        radial-gradient(circle at 70% 85%, rgba(248,181,129,0.18), transparent 70%);
+        radial-gradient(circle at 14% 18%, rgba(248,250,252,0.08), transparent 60%),
+        radial-gradient(circle at 72% 85%, rgba(248,181,129,0.2), transparent 70%);
       mix-blend-mode: screen;
-      opacity: 0.55;
+      opacity: 0.65;
       animation: boardGlow 20s ease-in-out infinite alternate;
+      filter: blur(2px);
     }
 
-    /* Dawn テーマ */
     .board.theme-dawn {
-      background: radial-gradient(circle at top, #4f46e5, #020617);
+      background: radial-gradient(circle at top, rgba(95, 74, 230, 0.32), rgba(3, 8, 16, 0.92));
     }
     .board.theme-dawn::before {
       background:
-        radial-gradient(circle at 20% 10%, rgba(244,219,255,0.14), transparent 55%),
-        radial-gradient(circle at 80% 85%, rgba(96,165,250,0.16), transparent 65%);
+        radial-gradient(circle at 20% 10%, rgba(244,219,255,0.18), transparent 55%),
+        radial-gradient(circle at 80% 85%, rgba(96,165,250,0.2), transparent 65%);
       mix-blend-mode: screen;
-      opacity: 0.6;
+      opacity: 0.7;
       animation: boardGlow 22s ease-in-out infinite alternate;
+      filter: blur(2px);
     }
 
-    /* たまに走る淡い光の筋 */
     .board::after {
       background: linear-gradient(
         120deg,
         transparent,
-        rgba(255,255,255,0.06),
+        rgba(255,255,255,0.08),
         transparent
       );
       opacity: 0;
@@ -93,120 +328,129 @@
       animation: boardSweep 22s linear infinite;
     }
 
-    /* Cinematic モードで光少し強め */
     .cinematic-on .board::before {
-      opacity: 0.8;
+      opacity: 0.9;
     }
     .cinematic-on .board::after {
-      opacity: 0.12;
+      opacity: 0.14;
       animation-duration: 18s;
     }
 
     @keyframes boardGlow {
       0%   { opacity: 0.35; transform: translate3d(0,0,0); }
-      100% { opacity: 0.8;  transform: translate3d(-12px, 8px, 0); }
+      100% { opacity: 0.85; transform: translate3d(-12px, 8px, 0); }
     }
 
     @keyframes boardSweep {
       0%   { opacity: 0;   transform: translateX(-120%); }
-      5%   { opacity: 0.4; }
+      5%   { opacity: 0.45; }
       20%  { opacity: 0;   transform: translateX(20%); }
       100% { opacity: 0;   transform: translateX(120%); }
     }
 
-    h2 {
-      margin: 0 0 8px;
-      font-size: 18px;
+    .buttons-row button {
+      flex: 1 1 120px;
+      min-width: 140px;
     }
-    .buttons-row {
+
+    .settings-card {
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 12px;
+      background: radial-gradient(circle at 10% 10%, rgba(157,227,255,0.08), transparent 45%),
+                  radial-gradient(circle at 90% 20%, rgba(155,178,255,0.06), transparent 50%),
+                  linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 14px 32px rgba(0,0,0,0.35);
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .settings-card.hidden {
+      display: none;
+    }
+    .settings-header {
+      font-size: 12px;
+      color: var(--text);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
+      opacity: 0.9;
     }
-    button {
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .settings-row > span:first-child {
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .settings-row .switch {
+      justify-self: end;
+    }
+    .settings-row .switch {
+      justify-self: end;
+    }
+    .settings-row select {
+      font-size: 12px;
       padding: 6px 10px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      background: #2563eb;
-      color: #fff;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    button.secondary {
-      background: #6b7280;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-    textarea {
-      width: 100%;
-      resize: vertical;
-      font-family: inherit;
-      font-size: 13px;
-      padding: 6px 8px;
-    }
-    label {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .small {
-      font-size: 11px;
-      color: #555;
-      line-height: 1.5;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: var(--glass);
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
     }
 
-    .theme-row,
-    .mode-row {
-      display: flex;
+    .settings-toggle {
+      width: auto;
+      align-self: flex-start;
+      justify-content: center;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      padding: 8px 12px;
+      font-weight: 700;
       font-size: 12px;
-    }
-    .theme-row select {
-      font-size: 12px;
-      padding: 3px 6px;
-    }
-    .mode-row label {
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
 
-    /* カード共通 */
     .card {
       width: 120px;
       height: 180px;
       position: absolute;
-      border-radius: 8px;
-      background-color: #111;
+      border-radius: 12px;
+      background-color: rgba(10, 13, 20, 0.88);
       background-position: center;
       background-repeat: no-repeat;
-      background-size: cover; /* 裏面用。表は face-up で上書き */
-      /* 光源を左上に想定した影 */
-      box-shadow: 4px 10px 16px rgba(0,0,0,0.85);
+      background-size: cover;
+      box-shadow: 4px 12px 22px rgba(0,0,0,0.82);
       transform-origin: center center;
-      touch-action: none; /* iPhone でスムーズにドラッグ */
+      touch-action: none;
       cursor: grab;
-      border: 1px solid rgba(255,255,255,0.22);
-      transition: box-shadow 0.12s ease; /* transform にはアニメをかけない */
+      border: 1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(4px);
+      transition: box-shadow 0.12s ease;
     }
 
     .card.face-down {
-      background-image: linear-gradient(135deg, #555, #111);
+      background-image: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
     }
 
     .card.face-up {
-      background-color: #e9dfc8; /* JS側で微妙に変化させる用 */
+      background-color: #ece2cc;
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      border: 1px solid rgba(80,60,30,0.9);
+      border: 1px solid rgba(80,60,30,0.8);
+      box-shadow: 6px 14px 28px rgba(0,0,0,0.92);
     }
 
-    /* 紙テクスチャ風オーバーレイ */
     .card.face-up::before {
       content: "";
       position: absolute;
@@ -214,89 +458,127 @@
       border-radius: inherit;
       pointer-events: none;
       background-image:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 55%),
-        radial-gradient(circle at 80% 80%, rgba(0,0,0,0.18), transparent 60%),
-        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.06));
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(0,0,0,0.2), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.08));
       mix-blend-mode: multiply;
-      opacity: 0.28;
+      opacity: 0.32;
     }
 
     .card.face-up::after {
       content: attr(data-name);
       position: absolute;
-      left: 4px;
-      right: 4px;
-      bottom: 4px;
-      font-size: 11px;
-      color: #3b2b1a;
-      background: rgba(255,248,235,0.95);
-      padding: 2px 4px;
-      border-radius: 4px;
+      left: 6px;
+      right: 6px;
+      bottom: 6px;
+      font-size: var(--name-size, 11px);
+      line-height: 1.2;
+      color: #2b1c0e;
+      background: rgba(255,248,235,0.9);
+      padding: 3px 6px;
+      border-radius: 8px;
       text-align: center;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      box-shadow: 0 0 6px rgba(0,0,0,0.25);
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
-    /* さりげない「今めくったカード」 */
     .card.just-revealed {
-      filter: brightness(1.06);
+      filter: brightness(1.08);
+      transform: translateY(-2px);
     }
 
-    /* 選択状態の見た目（束として扱うカード） */
     .card.selected {
-      outline: 2px solid rgba(251,191,36,0.9);
+      outline: 2px solid rgba(157,227,255,0.9);
       outline-offset: 2px;
+      box-shadow: 0 0 28px rgba(157,227,255,0.45), 6px 14px 28px rgba(0,0,0,0.9);
     }
 
     .instructions {
       font-size: 11px;
-      color: #444;
-      background: #fff;
-      border-radius: 6px;
-      padding: 6px 8px;
-      border: 1px solid #e5e5e5;
+      color: var(--text);
+      background: var(--glass);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--stroke);
+      line-height: 1.6;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
     }
 
-    /* 墓地ゾーン：右上に移動 */
     #graveyard {
       position: absolute;
       right: 16px;
       top: 16px;
       width: 360px;
       height: 190px;
-      border: 2px dashed rgba(148,163,184,0.9);
-      border-radius: 10px;
+      border: 1.5px dashed rgba(148,163,184,0.9);
+      border-radius: 14px;
       color: #e5e7eb;
       font-size: 12px;
-      padding: 4px 8px;
-      pointer-events: none; /* カードを掴めるように */
-      background: radial-gradient(circle at top left, rgba(15,23,42,0.8), transparent 70%);
+      padding: 8px 10px;
+      pointer-events: none;
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.5), transparent 70%),
+                  rgba(255,255,255,0.02);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
     #graveyard span {
       opacity: 0.85;
+      letter-spacing: 0.02em;
     }
 
-    /* 範囲選択用の矩形 */
     #selectionBox {
       position: absolute;
-      border: 1px dashed rgba(251,191,36,0.9);
-      background: rgba(251,191,36,0.12);
+      border: 1px dashed rgba(157,227,255,0.9);
+      background: rgba(157,227,255,0.12);
       pointer-events: none;
       display: none;
       z-index: 9999;
+      border-radius: 8px;
     }
 
-    /* スマホレイアウト調整 */
-    @media (max-width: 768px) {
+    .card-meaning {
+      position: absolute;
+      min-width: 120px;
+      max-width: none;
+      color: var(--text);
+      background: var(--glass-strong);
+      border: 1px solid var(--stroke);
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: center;
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12);
+      pointer-events: none;
+      transform: translate(-50%, 6px);
+      z-index: 9000;
+    }
+
+
+    @media (max-width: 900px) {
       body {
         flex-direction: column;
-        height: 100vh;
+        height: auto;
       }
       .left-panel {
         width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #1f2933;
+      }
+      .board {
+        height: 62vh;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
         padding: 12px;
-        gap: 8px;
+        gap: 12px;
+      }
+      .left-panel {
+        padding: 14px;
+        gap: 10px;
       }
       .board {
         height: 60vh;
@@ -304,6 +586,7 @@
       .card {
         width: 80px;
         height: 120px;
+        border-radius: 10px;
       }
       #graveyard {
         width: 280px;
@@ -312,34 +595,64 @@
       textarea {
         font-size: 12px;
       }
+      .buttons-row button {
+        min-width: 120px;
+        flex: 1 1 120px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="left-panel">
-    <h2>タロットカード ピッカー</h2>
+    <div class="title-block">
+      <div>
+        <div class="title-main">Tarot Atelier</div>
+        <div class="title-sub">Card Picker</div>
+      </div>
+      <span class="title-pill">v1</span>
+    </div>
+
+    <button id="settingsToggleButton" class="secondary settings-toggle">設定</button>
 
     <div class="buttons-row">
   <button id="refreshListButton">一覧を更新</button>
   <button id="selectAllButton">一覧を全選択</button>
   <button id="copyButton">コピー</button>
-  <button id="resetButton" class="secondary">リセット</button>
+  <button id="resetButton" class="secondary">リセット（シャッフル）</button>
 </div>
 
 
-    <div class="theme-row">
-      <span>テーマ:</span>
-      <select id="themeSelect">
-        <option value="night">Night</option>
-        <option value="candle">Candle</option>
-        <option value="dawn">Dawn</option>
-      </select>
-    </div>
-    <div class="mode-row">
-      <label>
-        <input type="checkbox" id="cinematicToggle" />
-        Cinematic モード
-      </label>
+    <div class="settings-card hidden" id="settingsCard">
+      <div class="settings-header">設定</div>
+      <div class="settings-row">
+        <span>テーマ</span>
+        <select id="themeSelect">
+          <option value="night">Night</option>
+          <option value="candle">Candle</option>
+          <option value="dawn">Dawn</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span>演出</span>
+        <label class="switch">
+          <input type="checkbox" id="cinematicToggle" />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>意味表示</span>
+        <label class="switch">
+          <input type="checkbox" id="meaningToggle" checked />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>全カード表</span>
+        <label class="switch">
+          <input type="checkbox" id="debugToggle" />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
     </div>
 
     <div class="instructions">
@@ -407,6 +720,98 @@
       { key: "king", label: "キング" }
     ];
 
+    const MAJOR_MEANINGS = [
+      { upright: "自由・無垢・冒険の始まり", reversed: "無鉄砲・未熟・行き当たりばったり" }, // 愚者
+      { upright: "創造・意志・器用さ", reversed: "手段不足・空回り・集中欠如" }, // 魔術師
+      { upright: "直感・静けさ・内なる知恵", reversed: "無関心・秘密・冷淡さ" }, // 女教皇
+      { upright: "豊かさ・母性・育み", reversed: "過保護・怠惰・甘やかし" }, // 女帝
+      { upright: "統率・安定・責任", reversed: "支配・硬直・権威の乱用" }, // 皇帝
+      { upright: "伝統・助言・精神性", reversed: "形式主義・誤った助言・閉鎖性" }, // 法王
+      { upright: "選択・愛・調和", reversed: "迷い・誘惑・不一致" }, // 恋人
+      { upright: "勝利・推進力・意志", reversed: "暴走・コントロール不足・空回り" }, // 戦車
+      { upright: "勇気・内面の強さ・慈愛", reversed: "不安・弱気・自信喪失" }, // 力
+      { upright: "探求・熟考・内省", reversed: "孤立・停滞・閉じこもり" }, // 隠者
+      { upright: "変化・転機・巡り合わせ", reversed: "逆行・停滞・タイミングの悪さ" }, // 運命の輪
+      { upright: "公平・調整・客観性", reversed: "不均衡・偏り・不正" }, // 正義
+      { upright: "献身・視点の転換・受容", reversed: "無駄な犠牲・停滞・抵抗" }, // 吊るされた男
+      { upright: "終わりと再生・手放し", reversed: "拒否・先延ばし・惰性" }, // 死神
+      { upright: "調和・節度・バランス", reversed: "乱れ・過剰・行き過ぎ" }, // 節制
+      { upright: "執着・誘惑・依存", reversed: "解放の兆し・目覚め・手放し" }, // 悪魔
+      { upright: "崩壊・覚醒・雷のような変化", reversed: "損害の軽減・徐々の崩れ・警告" }, // 塔
+      { upright: "希望・インスピレーション・癒し", reversed: "失望・気力低下・疑念" }, // 星
+      { upright: "不安・幻想・揺らぎ", reversed: "真実へ近づく・混乱収束・明確化" }, // 月
+      { upright: "成功・喜び・活力", reversed: "一時の停滞・熱意不足・遅れ" }, // 太陽
+      { upright: "再生・評価・目覚め", reversed: "過去への執着・躊躇・自己否定" }, // 審判
+      { upright: "達成・完成・統合", reversed: "未完・停滞・余白が残る" } // 世界
+    ];
+
+    const SUIT_MEANINGS = {
+      wands: {
+        ace: { upright: "始まり・情熱・火がつく", reversed: "焦り・散漫・空回り" },
+        2: { upright: "計画・調整・見通し", reversed: "優柔不断・停滞" },
+        3: { upright: "展望・船出・視野拡大", reversed: "遅れ・準備不足" },
+        4: { upright: "安定・祝福・基盤づくり", reversed: "マンネリ・解散" },
+        5: { upright: "競争・刺激・切磋琢磨", reversed: "無駄な衝突・摩擦" },
+        6: { upright: "勝利・称賛・達成感", reversed: "過信・承認欲" },
+        7: { upright: "防衛・立場を守る・粘り", reversed: "孤立・消耗" },
+        8: { upright: "加速・連絡・スピード", reversed: "遅延・空振り" },
+        9: { upright: "粘り強さ・備え・守り", reversed: "疲労・警戒し過ぎ" },
+        10: { upright: "重荷・責任・やるべきこと", reversed: "限界・投げ出したい" },
+        page: { upright: "好奇心・学び・小さな火種", reversed: "軽率・飽きっぽさ" },
+        knight: { upright: "行動力・冒険・勢い", reversed: "衝動・落ち着きのなさ" },
+        queen: { upright: "情熱的な支援・温かさ", reversed: "嫉妬・過干渉" },
+        king: { upright: "リーダーシップ・ビジョン", reversed: "独善・横暴" }
+      },
+      cups: {
+        ace: { upright: "愛情・共感・心の満たされ", reversed: "空虚・感情の停滞" },
+        2: { upright: "パートナーシップ・絆", reversed: "すれ違い・不和" },
+        3: { upright: "祝宴・友情・コミュニティ", reversed: "過剰・遊び過ぎ" },
+        4: { upright: "倦怠・内省・一時停止", reversed: "目覚め・関心回復" },
+        5: { upright: "喪失・後悔・悲しみ", reversed: "立ち直り・希望の兆し" },
+        6: { upright: "ノスタルジー・優しさ", reversed: "過去への囚われ・幼さ" },
+        7: { upright: "夢想・選択肢・空想", reversed: "現実逃避・決断不足" },
+        8: { upright: "手放し・旅立ち・区切り", reversed: "躊躇・中途半端" },
+        9: { upright: "充足・願望成就・くつろぎ", reversed: "過剰享楽・満足できない" },
+        10: { upright: "幸福・家族愛・調和", reversed: "調和の欠如・形だけ" },
+        page: { upright: "繊細さ・優しい知らせ", reversed: "情緒不安・不器用" },
+        knight: { upright: "ロマンス・献身・優雅さ", reversed: "不誠実・移ろいやすさ" },
+        queen: { upright: "思いやり・包容・癒やし", reversed: "共依存・感情過多" },
+        king: { upright: "落ち着いた愛情・成熟", reversed: "感情操作・冷淡" }
+      },
+      swords: {
+        ace: { upright: "真実・洞察・決断", reversed: "混乱・誤解" },
+        2: { upright: "均衡・休戦・静けさ", reversed: "決断回避・思考停止" },
+        3: { upright: "悲しみ・分離・痛み", reversed: "回復・傷が癒える" },
+        4: { upright: "休息・静養・リセット", reversed: "焦り・回復の遅れ" },
+        5: { upright: "勝ち負けへの執着・策略", reversed: "過ぎた勝利・後悔" },
+        6: { upright: "移行・穏やかな移動", reversed: "停滞・逃避できない" },
+        7: { upright: "策略・独走・工夫", reversed: "露見・独りよがり" },
+        8: { upright: "束縛・思い込み・制限", reversed: "解放・状況好転" },
+        9: { upright: "不安・悪夢・心配", reversed: "恐れを手放す・回復" },
+        10: { upright: "終わり・痛みのピーク", reversed: "再生の兆し・負担軽減" },
+        page: { upright: "好奇心と知性・情報", reversed: "噂・未熟な批判" },
+        knight: { upright: "迅速・鋭い行動・突破", reversed: "無謀・冷酷" },
+        queen: { upright: "独立・明晰さ・洞察", reversed: "厳しさ・冷淡さ" },
+        king: { upright: "客観性・判断力・論理", reversed: "支配的・理屈っぽさ" }
+      },
+      pentacles: {
+        ace: { upright: "物質的チャンス・安定", reversed: "浪費・機会損失" },
+        2: { upright: "両立・バランス・やりくり", reversed: "不安定・やりくり失敗" },
+        3: { upright: "協力・技能・チームワーク", reversed: "評価不足・共同の乱れ" },
+        4: { upright: "保守・所有欲・堅実", reversed: "手放す準備・停滞打破" },
+        5: { upright: "困窮・孤立・試練", reversed: "回復の兆し・助力" },
+        6: { upright: "分かち合い・支援・慈善", reversed: "不公平・見返り要求" },
+        7: { upright: "成長待ち・忍耐・途中経過", reversed: "焦り・投資の無駄" },
+        8: { upright: "熟練・努力・習熟", reversed: "マンネリ・手抜き" },
+        9: { upright: "豊かさ・独立・自給", reversed: "依存・贅沢の疲れ" },
+        10: { upright: "遺産・長期的安定・家族基盤", reversed: "家系の不和・短期志向" },
+        page: { upright: "実務の学び・堅実な提案", reversed: "怠慢・計画不足" },
+        knight: { upright: "着実さ・勤勉・継続", reversed: "停滞・頑固さ" },
+        queen: { upright: "実際的な愛情・寛容", reversed: "過干渉・現実逃避" },
+        king: { upright: "経営力・信頼・安定", reversed: "固執・物質主義" }
+      }
+    };
+
     var TAROT_DECK = [];
 
     // 大アルカナ 22枚
@@ -447,12 +852,83 @@
     var refreshListButton = document.getElementById("refreshListButton");
     var themeSelect = document.getElementById("themeSelect");
     var cinematicToggle = document.getElementById("cinematicToggle");
+    var meaningToggle = document.getElementById("meaningToggle");
+    var debugToggle = document.getElementById("debugToggle");
+    var settingsToggleButton = document.getElementById("settingsToggleButton");
+    var settingsCard = document.getElementById("settingsCard");
     var copyButton = document.getElementById("copyButton");
 
 
     var drawnCards = []; // { id, name, element, faceUp, isReversed, x, y, inGraveyard, imagePath, revealOrder, lastTapTime, baseColor, selected, selectionOrder }
     var revealCounter = 0;
     var isCinematic = false;
+    var showMeaning = true;
+    var isDebugMode = false;
+    var suppressSelectionOnReveal = false;
+
+    function ensureMeaningElement(cardObj) {
+      if (cardObj.meaningEl) return;
+      var el = document.createElement("div");
+      el.className = "card-meaning";
+      el.style.display = "none";
+      boardEl.appendChild(el);
+      cardObj.meaningEl = el;
+    }
+
+    function getMeaningObject(cardObj) {
+      var id = cardObj.id || "";
+      if (id.indexOf("major-") === 0) {
+        var idx = parseInt(id.split("-")[1], 10);
+        return MAJOR_MEANINGS[idx] || null;
+      }
+      var parts = id.split("-");
+      if (parts.length === 2) {
+        var suitKey = parts[0];
+        var rankKey = parts[1];
+        if (SUIT_MEANINGS[suitKey] && SUIT_MEANINGS[suitKey][rankKey]) {
+          return SUIT_MEANINGS[suitKey][rankKey];
+        }
+      }
+      return null;
+    }
+
+    function getMeaningText(cardObj) {
+      var meaningObj = getMeaningObject(cardObj);
+      if (!meaningObj) return null;
+      return cardObj.isReversed ? meaningObj.reversed : meaningObj.upright;
+    }
+
+    function updateMeaningContent(cardObj) {
+      if (!cardObj.meaningEl) return;
+      if (!showMeaning) {
+        cardObj.meaningEl.style.display = "none";
+        return;
+      }
+      var meaning = getMeaningText(cardObj);
+      if (meaning) {
+        cardObj.meaningEl.textContent = meaning;
+        cardObj.meaningEl.style.display = "block";
+        // テキスト長に応じて幅を可変に（1行で収まるように）
+        cardObj.meaningEl.style.width = "auto";
+        var contentWidth = cardObj.meaningEl.scrollWidth;
+        var finalWidth = Math.max(140, contentWidth + 8);
+        cardObj.meaningEl.style.width = finalWidth + "px";
+      } else {
+        cardObj.meaningEl.style.display = "none";
+      }
+    }
+
+    function updateMeaningPosition(cardObj) {
+      if (!showMeaning) return;
+      if (!cardObj.meaningEl || cardObj.meaningEl.style.display === "none") return;
+      var cardWidth = cardObj.element.offsetWidth;
+      var cardHeight = cardObj.element.offsetHeight;
+      var left = cardObj.x + cardWidth / 2;
+      var top = cardObj.y + cardHeight + 6;
+      cardObj.meaningEl.style.left = left + "px";
+      cardObj.meaningEl.style.top = top + "px";
+    }
+    function hideMeaningTooltip() {}
 
     // 選択管理
     var currentSelection = []; // 選択中カードの配列
@@ -568,6 +1044,7 @@
       selectionCounter = 0;
       revealCounter = 0;
       activeDrag = null;
+      hideMeaningTooltip();
 
       // board の子要素のうち graveyard / selectionBox 以外を削除
       var children = Array.prototype.slice.call(boardEl.children);
@@ -630,14 +1107,28 @@
           cardEl.style.backgroundImage = "url('" + cardObj.imagePath + "')";
           cardEl.style.backgroundColor = cardObj.baseColor;
 
+          var nameLen = cardObj.name.length;
+          var nameSize = 11;
+          if (nameLen > 12) nameSize = 10;
+          if (nameLen > 16) nameSize = 9;
+          if (nameLen > 20) nameSize = 8;
+          if (nameLen > 24) nameSize = 7;
+          cardEl.style.setProperty("--name-size", nameSize + "px");
+
           var angle = cardObj.baseAngle + (cardObj.isReversed ? 180 : 0);
           cardEl.style.transform = "rotate(" + angle + "deg)";
 
+          ensureMeaningElement(cardObj);
+          updateMeaningContent(cardObj);
+          updateMeaningPosition(cardObj);
+
           // 表にした瞬間、そのカードを自動的に選択（リアルタイムでリスト反映）
-          if (!cardObj.selected) {
-            addToSelection(cardObj);
-          } else {
-            updateCardsOutput();
+          if (!suppressSelectionOnReveal) {
+            if (!cardObj.selected) {
+              addToSelection(cardObj);
+            } else {
+              updateCardsOutput();
+            }
           }
 
           // 表示された瞬間にふわっとフォーカス
@@ -651,6 +1142,7 @@
             }
           }, 900);
         }
+        cardObj.revealCard = revealCard;
 
         // pointer イベントでドラッグ & ダブルタップ検知 & 選択操作
         (function(cardObj, cardEl) {
@@ -716,6 +1208,7 @@
               o.card.y = newY;
               o.card.element.style.left = newX + "px";
               o.card.element.style.top = newY + "px";
+              updateMeaningPosition(o.card);
             });
           });
 
@@ -784,6 +1277,48 @@
       });
     }
 
+    function layoutDebugGrid() {
+      if (!drawnCards.length) return;
+      var boardRect = boardEl.getBoundingClientRect();
+      var cardWidth = drawnCards[0].element.offsetWidth || 120;
+      var cardHeight = drawnCards[0].element.offsetHeight || 180;
+      var marginX = 12;
+      var marginY = 14;
+      var cols = Math.max(1, Math.floor((boardRect.width - 24) / (cardWidth + marginX)));
+      drawnCards.forEach(function(c, idx) {
+        var col = idx % cols;
+        var row = Math.floor(idx / cols);
+        var x = 16 + col * (cardWidth + marginX);
+        var y = 16 + row * (cardHeight + marginY);
+        c.x = x;
+        c.y = y;
+        c.element.style.left = x + "px";
+        c.element.style.top = y + "px";
+        updateMeaningPosition(c);
+      });
+    }
+
+    function applyDebugLayout() {
+      if (!drawnCards.length) return;
+      suppressSelectionOnReveal = true;
+      drawnCards.forEach(function(c) {
+        if (!c.faceUp && typeof c.revealCard === "function") {
+          c.revealCard();
+        }
+      });
+      suppressSelectionOnReveal = false;
+      clearSelection();
+      layoutDebugGrid();
+      drawnCards.forEach(updateMeaningPosition);
+      updateCardsOutput();
+    }
+
+    function rebuildBoard() {
+      initCards();
+      if (isDebugMode) {
+        applyDebugLayout();
+      }
+    }
     // 墓地ゾーンのレイアウト
     function layoutGraveyard() {
       var boardRect = boardEl.getBoundingClientRect();
@@ -807,6 +1342,7 @@
         c.y = y;
         c.element.style.left = x + "px";
         c.element.style.top = y + "px";
+        updateMeaningPosition(c);
       });
     }
 
@@ -841,7 +1377,7 @@
     // リセットボタン
     resetButton.addEventListener("click", function() {
       cardsOutputEl.value = "";
-      initCards();
+      rebuildBoard();
     });
 
     // 一覧を全選択ボタン
@@ -878,7 +1414,6 @@ copyButton.addEventListener("click", function() {
   }
 });
 
-
     // テーマ切り替え
     function applyTheme(theme) {
       boardEl.classList.remove("theme-night", "theme-candle", "theme-dawn");
@@ -898,6 +1433,38 @@ copyButton.addEventListener("click", function() {
           applySuitGlow(c, c.element, { highlight: false });
         }
       });
+    });
+
+    meaningToggle.addEventListener("change", function() {
+      showMeaning = this.checked;
+      drawnCards.forEach(function(c) {
+        if (c.meaningEl) {
+          if (showMeaning && c.faceUp) {
+            updateMeaningContent(c);
+            updateMeaningPosition(c);
+          } else {
+            c.meaningEl.style.display = "none";
+          }
+        }
+      });
+    });
+
+    debugToggle.addEventListener("change", function() {
+      isDebugMode = this.checked;
+      rebuildBoard();
+    });
+
+    function updateSettingsVisibility() {
+      var isHidden = settingsCard.classList.contains("hidden");
+      if (isHidden) {
+        settingsCard.classList.remove("hidden");
+      } else {
+        settingsCard.classList.add("hidden");
+      }
+    }
+
+    settingsToggleButton.addEventListener("click", function() {
+      updateSettingsVisibility();
     });
 
     // ===== 範囲選択（ドラッグで矩形選択） =====
@@ -988,7 +1555,9 @@ copyButton.addEventListener("click", function() {
     // ページロード時に初期化
     window.addEventListener("load", function() {
       applyTheme("night");
-      initCards();
+      rebuildBoard();
+      settingsCard.classList.add("hidden");
+      settingsToggleButton.textContent = "設定";
     });
   </script>
 </body>
