@@ -671,6 +671,15 @@
 
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
     gap: 10px;
+
+    /* ✅ ここ追加：中身をスクロールさせる */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+
+    /* ついでに：閉じた状態でも取っ手は見える */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   body.mobile-panel-open .left-panel{
@@ -700,6 +709,12 @@
 
   textarea{
     max-height: 22svh;
+  }
+
+  .card{
+    width: 60px;   /* 120 → 半分 */
+    height: 90px;  /* 180 → 半分 */
+    border-radius: 9px;
   }
 }
 
@@ -1439,7 +1454,7 @@
         applyDebugLayout();
       }
     }
-    // 墓地ゾーンのレイアウト
+    // 墓地ゾーンのレイアウト（カードサイズに連動）
     function layoutGraveyard() {
       var boardRect = boardEl.getBoundingClientRect();
       var graveRect = graveyardEl.getBoundingClientRect();
@@ -1449,15 +1464,22 @@
       var gw = graveRect.width;
 
       var graveCards = drawnCards.filter(function(c) { return c.inGraveyard; });
-
       if (graveCards.length === 0) return;
 
-      var maxPerRow = Math.max(1, Math.floor(gw / 45));
+      // 実カードサイズから計算（モバイル縮小に追従）
+      var sample = graveCards[0].element;
+      var cw = sample.offsetWidth || 120;
+      var ch = sample.offsetHeight || 180;
+
+      var colStep = Math.max(18, Math.round(cw * 0.45));
+      var rowStep = Math.max(24, Math.round(ch * 0.32));
+      var maxPerRow = Math.max(1, Math.floor((gw - 10) / colStep));
+
       graveCards.forEach(function(c, idx) {
         var col = idx % maxPerRow;
         var row = Math.floor(idx / maxPerRow);
-        var x = gx + 8 + col * 24;
-        var y = gy + 30 + row * 34;
+        var x = gx + 8 + col * colStep;
+        var y = gy + 30 + row * rowStep;
         c.x = x;
         c.y = y;
         c.element.style.left = x + "px";
@@ -1636,6 +1658,8 @@ copyButton.addEventListener("click", function() {
     var selectionAdditive = false; // Shift 押しながらなら既存選択に追加
 
     boardEl.addEventListener("pointerdown", function(e) {
+      // ✅ 追加：モバイルでは範囲選択しない
+      if (window.matchMedia("(max-width: 640px)").matches) return;
       // board の空き部分をドラッグしたときだけ範囲選択開始
       if (e.button !== 0) return;
       if (e.target !== boardEl) return; // カード上でのドラッグは無視
@@ -1713,6 +1737,23 @@ copyButton.addEventListener("click", function() {
 
     boardEl.addEventListener("pointerup", finishSelection);
     boardEl.addEventListener("pointercancel", finishSelection);
+
+    // ✅ iOS等の「ダブルタップでズーム」を抑制（盤面のみ）
+    (function preventDoubleTapZoom(){
+      var lastTouchEnd = 0;
+
+      boardEl.addEventListener("touchend", function(e){
+        // 左パネル上の操作は邪魔しない
+        var lp = document.querySelector(".left-panel");
+        if (lp && lp.contains(e.target)) return;
+
+        var now = Date.now();
+        if (now - lastTouchEnd <= 350) {
+          e.preventDefault(); // ←これが効く
+        }
+        lastTouchEnd = now;
+      }, { passive: false });
+    })();
 
     // ページロード時に初期化
     window.addEventListener("load", function() {
