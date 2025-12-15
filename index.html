@@ -716,6 +716,66 @@
     height: 90px;  /* 180 → 半分 */
     border-radius: 9px;
   }
+  /* =========================
+     Mobile tweaks: labels, tooltips, title, handle
+     ========================= */
+  /* ✅ カード名ラベル（下の表示名）を小さく＆余白も縮小 */
+  .card.face-up::after{
+    font-size: calc(var(--name-size, 11px) * 0.55);
+    padding: 2px 4px;
+    border-radius: 6px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+  }
+
+  /* ✅ 意味説明ブロック（card-meaning）を小さく（サイズも余白も） */
+  .card-meaning{
+    /* ✅ 意味ツールチップ：可変＆折り返し */
+    display: inline-block;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+
+    font-size: 9px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transform: translate(-50%, 4px);
+
+    width: auto;
+    max-width: min(72vw, 260px);
+    min-width: 120px;
+    text-align: left;
+  }
+
+  /* ✅ 「メニュー（取っ手）」を一番上に固定（スクロールしても見える） */
+  .mobile-handle{
+    order: -100;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+    backdrop-filter: blur(10px);
+  }
+
+  /* ✅ タイトルをかなり小さく */
+  .title-block{
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+  .title-main{
+    font-size: 14px;
+    letter-spacing: 0.06em;
+  }
+  .title-sub{
+    font-size: 9px;
+    letter-spacing: 0.16em;
+  }
+  .title-pill{
+    font-size: 9px;
+    padding: 2px 8px;
+  }
 }
 
   </style>
@@ -1001,6 +1061,19 @@
     var isDebugMode = false;
     var suppressSelectionOnReveal = false;
 
+    function isMobileLayout() {
+      return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+    }
+
+    function refreshAllMeanings() {
+      drawnCards.forEach(function(c) {
+        if (c.meaningEl) {
+          updateMeaningContent(c);
+          updateMeaningPosition(c);
+        }
+      });
+    }
+
     function ensureMeaningElement(cardObj) {
       if (cardObj.meaningEl) return;
       var el = document.createElement("div");
@@ -1035,19 +1108,27 @@
 
     function updateMeaningContent(cardObj) {
       if (!cardObj.meaningEl) return;
-      if (!showMeaning) {
+
+      // ✅ 基本の表示条件
+      if (!showMeaning || !cardObj.faceUp || cardObj.inGraveyard) {
         cardObj.meaningEl.style.display = "none";
         return;
       }
+
+      // ✅ モバイルでは「選択中のみ」意味表示
+      if (isMobileLayout() && !cardObj.selected) {
+        cardObj.meaningEl.style.display = "none";
+        return;
+      }
+
       var meaning = getMeaningText(cardObj);
       if (meaning) {
         cardObj.meaningEl.textContent = meaning;
         cardObj.meaningEl.style.display = "block";
-        // テキスト長に応じて幅を可変に（1行で収まるように）
+
+        // 幅はCSSに任せる（前に入れた可変レイアウトと相性◎）
         cardObj.meaningEl.style.width = "auto";
-        var contentWidth = cardObj.meaningEl.scrollWidth;
-        var finalWidth = Math.max(140, contentWidth + 8);
-        cardObj.meaningEl.style.width = finalWidth + "px";
+        cardObj.meaningEl.style.maxWidth = isMobileLayout() ? "min(72vw, 260px)" : "none";
       } else {
         cardObj.meaningEl.style.display = "none";
       }
@@ -1085,6 +1166,7 @@
       });
       currentSelection = [];
       updateCardsOutput();
+      refreshAllMeanings();
     }
 
     function addToSelection(cardObj) {
@@ -1094,6 +1176,7 @@
         currentSelection.push(cardObj);
         updateCardSelectionStyle(cardObj);
         updateCardsOutput();
+        refreshAllMeanings();
       }
     }
 
@@ -1104,6 +1187,7 @@
         currentSelection = currentSelection.filter(function(c) { return c !== cardObj; });
         updateCardSelectionStyle(cardObj);
         updateCardsOutput();
+        refreshAllMeanings();
       }
     }
 
@@ -1192,17 +1276,35 @@
       var boardRect = boardEl.getBoundingClientRect();
       var cardsData = shuffle(TAROT_DECK);
 
-      // 山札位置（画面左寄り・中央あたり）
-      var pileCenterX = boardRect.width * 0.22;
-      var pileCenterY = boardRect.height * 0.55;
+      // ✅ 山札位置：モバイルは左下にきっちり寄せる
+      var mobile = isMobileLayout();
+      var cardW = mobile ? 60 : 120;
+      var cardH = mobile ? 90 : 180;
+
+      // 左下（安全マージン込み）
+      var pileBaseX = mobile ? 14 : boardRect.width * 0.22;
+      var pileBaseY = mobile ? (boardRect.height - cardH - 80
+      ) : (boardRect.height * 0.55);
 
       cardsData.forEach(function(cardData) {
         var cardEl = document.createElement("div");
         cardEl.className = "card face-down";
 
-        // 山札の中心付近にランダムにばらつかせる（山札の束っぽく）
-        var x = pileCenterX + (Math.random() - 0.5) * 60;
-        var y = pileCenterY + (Math.random() - 0.5) * 80;
+        // ✅ モバイルは綺麗にスタック（ほぼ散らばらない）
+        //    PCは今まで通り少し散らす
+        var x, y;
+
+        if (mobile) {
+          // ほんの少しだけズラして“束”感（取り出しやすさも少しだけ確保）
+          var n = drawnCards.length; // 既に置いた枚数
+          var step = 0.18;           // 小さな段差
+          x = pileBaseX + n * step;
+          y = pileBaseY - n * step;
+        } else {
+          // PCは従来の散らし
+          x = pileBaseX + (Math.random() - 0.5) * 60;
+          y = pileBaseY + (Math.random() - 0.5) * 80;
+        }
 
         cardEl.style.left = x + "px";
         cardEl.style.top = y + "px";
@@ -1529,30 +1631,58 @@
     });
 
     // コピー用ボタン
-copyButton.addEventListener("click", function() {
-  // まずテキストを選択
-  cardsOutputEl.focus();
-  cardsOutputEl.select();
+copyButton.addEventListener("click", async function() {
+  var text = cardsOutputEl.value || "";
+  if (!text.trim()) return;
 
-  // Clipboard API が使えればそっちを使う
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(cardsOutputEl.value)
-      .then(function () {
-        // ここで「コピーしました」的なフィードバックを出したければ追加
-        // 例）copyButton.textContent = "コピー完了！";
-        // setTimeout(function(){ copyButton.textContent = "コピー"; }, 1200);
-      })
-      .catch(function (err) {
-        console.error("Clipboard copy failed: ", err);
-      });
-  } else {
-    // 古いブラウザ向けフォールバック
-    try {
-      document.execCommand("copy");
-      // 同じく、必要ならフィードバックメッセージここで
-    } catch (err) {
-      console.error("execCommand copy failed: ", err);
+  // 見えるフィードバック（iPhoneは特に大事）
+  var prev = copyButton.textContent;
+  function ok() {
+    copyButton.textContent = "コピー完了！";
+    copyButton.disabled = true;
+    setTimeout(function(){
+      copyButton.textContent = prev;
+      copyButton.disabled = false;
+    }, 900);
+  }
+  function ng() {
+    copyButton.textContent = "コピー失敗…";
+    setTimeout(function(){ copyButton.textContent = prev; }, 900);
+  }
+
+  // 1) Clipboard API（HTTPS前提）
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      ok();
+      return;
     }
+  } catch (e) {
+    // fallthrough
+  }
+
+  // 2) iOS強めフォールバック（隠しtextareaでexecCommand）
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, 999999); // iOS対策
+
+    var success = document.execCommand("copy");
+    document.body.removeChild(ta);
+
+    if (success) ok();
+    else ng();
+  } catch (e) {
+    ng();
   }
 });
 
