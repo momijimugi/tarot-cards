@@ -1055,6 +1055,10 @@
           <p id="detailMeaning"></p>
         </div>
         <div class="detail-section">
+          <h3>アドバイス</h3>
+          <p id="detailAdvice"></p>
+        </div>
+        <div class="detail-section">
           <h3>カードのストーリー</h3>
           <p id="detailStory"></p>
         </div>
@@ -1255,6 +1259,7 @@
     var detailTitle = document.getElementById("detailTitle");
     var detailSubtitle = document.getElementById("detailSubtitle");
     var detailMeaning = document.getElementById("detailMeaning");
+    var detailAdvice = document.getElementById("detailAdvice");
     var detailStory = document.getElementById("detailStory");
     var detailInterpretation = document.getElementById("detailInterpretation");
     var detailCategories = document.getElementById("detailCategories");
@@ -1273,6 +1278,9 @@
     var detailedLoaded = false;
     var lastDetailCard = null;
     var detailedMeanings = { upright: {}, reversed: {} };
+    var adviceLoadStarted = false;
+    var adviceLoaded = false;
+    var adviceData = { upright: {}, reversed: {} };
     var SUIT_THEMES = {
       wands: "情熱・行動・意志",
       cups: "感情・つながり・共感",
@@ -1461,6 +1469,92 @@
       return data;
     }
 
+    function parseTarotAdviceText(text) {
+      var data = { upright: {}, reversed: {} };
+      var lines = text.split(/\r?\n/);
+      var currentId = null;
+      var suitMap = {
+        "ワンド": "wands",
+        "カップ": "cups",
+        "ソード": "swords",
+        "ペンタクル": "pentacles"
+      };
+      var rankMap = {
+        "A": "ace",
+        "Page": "page",
+        "Knight": "knight",
+        "Queen": "queen",
+        "King": "king"
+      };
+
+      lines.forEach(function(line) {
+        var trimmed = line.trim();
+        if (!trimmed) return;
+        if (trimmed.charCodeAt(0) === 0xfeff) {
+          trimmed = trimmed.slice(1);
+        }
+
+        var majorMatch = trimmed.match(/^(\d+)\s+/);
+        if (majorMatch) {
+          var index = parseInt(majorMatch[1], 10);
+          if (!isNaN(index)) {
+            currentId = "major-" + index;
+          }
+          return;
+        }
+
+        var minorMatch = trimmed.match(/^(?:[●◯・]\s*)?(ワンド|カップ|ソード|ペンタクル)(?:の)?(?:：|:)?\s*(A|[2-9]|10|Page|Knight|Queen|King)$/);
+        if (minorMatch) {
+          var suitKey = suitMap[minorMatch[1]];
+          var rankRaw = minorMatch[2];
+          var rankKey = rankMap[rankRaw] || rankRaw;
+          if (suitKey && rankKey) {
+            currentId = suitKey + "-" + rankKey;
+          }
+          return;
+        }
+
+        var positionMatch = trimmed.match(/^(正位置|逆位置)[：:]\s*(.+)$/);
+        if (!positionMatch || !currentId) return;
+        var target = positionMatch[1] === "正位置" ? "upright" : "reversed";
+        data[target][currentId] = positionMatch[2].trim();
+      });
+
+      return data;
+    }
+
+    function loadAdvice() {
+      if (adviceLoadStarted) return;
+      adviceLoadStarted = true;
+      fetch("tarot_advice_all.txt", { cache: "no-store" })
+        .then(function(response) {
+          if (!response.ok) throw new Error("failed to load tarot_advice_all.txt");
+          return response.arrayBuffer();
+        })
+        .then(function(buffer) {
+          var text = "";
+          try {
+            text = new TextDecoder("utf-8").decode(buffer);
+          } catch (_) {
+            text = "";
+          }
+          if (!text) {
+            text = String.fromCharCode.apply(null, new Uint8Array(buffer));
+          }
+          adviceData = parseTarotAdviceText(text);
+          adviceLoaded =
+            Object.keys(adviceData.upright).length > 0 ||
+            Object.keys(adviceData.reversed).length > 0;
+          if (detailModal && detailModal.classList.contains("open") && lastDetailCard) {
+            openDetailModal(lastDetailCard);
+          }
+        })
+        .catch(function() {
+          adviceLoaded = false;
+          adviceLoadStarted = false;
+        });
+    }
+
     function loadDetailedMeanings() {
       if (detailLoadStarted) return;
       detailLoadStarted = true;
@@ -1491,6 +1585,13 @@
           detailedLoaded = false;
           detailLoadStarted = false;
         });
+    }
+
+    function getAdviceEntry(cardObj) {
+      if (!cardObj || !cardObj.id) return "";
+      var mode = cardObj.isReversed ? "reversed" : "upright";
+      if (!adviceData[mode]) return "";
+      return adviceData[mode][cardObj.id] || "";
     }
 
     function getDetailedEntry(cardObj) {
@@ -1582,6 +1683,12 @@
 
       var autoCategories = buildCategoryInterpretations(keywords, cardObj.isReversed);
       var detailEntry = detailedLoaded ? getDetailedEntry(cardObj) : null;
+      var advice = "";
+      if (adviceLoaded) {
+        advice = getAdviceEntry(cardObj) || "（アドバイスが見つかりませんでした）";
+      } else if (adviceLoadStarted) {
+        advice = "アドバイスを読み込み中...";
+      }
 
       var detail = autoDetail;
       var story = autoStory;
@@ -1600,6 +1707,7 @@
       return {
         subtitle: subtitleParts.join(" ・ "),
         detail: detail,
+        advice: advice,
         story: story,
         interpretation: buildInterpretationHints(keywords, cardObj.isReversed),
         categories: categories
@@ -1618,10 +1726,16 @@
       if (!detailedLoaded) {
         loadDetailedMeanings();
       }
+      if (!adviceLoaded) {
+        loadAdvice();
+      }
       var payload = buildDetailPayload(cardObj);
       detailTitle.textContent = cardObj.name;
       detailSubtitle.textContent = payload.subtitle;
       detailMeaning.textContent = payload.detail;
+      if (detailAdvice) {
+        detailAdvice.textContent = payload.advice || "";
+      }
       detailStory.textContent = payload.story;
 
       while (detailInterpretation.firstChild) {
@@ -2434,6 +2548,7 @@ copyButton.addEventListener("click", async function() {
     window.addEventListener("load", function() {
       preloadDeckImages();
       loadDetailedMeanings();
+      loadAdvice();
       applyTheme("night");
       rebuildBoard();
       settingsCard.classList.add("hidden");
