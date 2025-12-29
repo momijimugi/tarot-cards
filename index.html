@@ -2447,6 +2447,8 @@ copyButton.addEventListener("click", async function() {
     var selectionAdditive = false; // Shift 押しながらなら既存選択に追加
 
     boardEl.addEventListener("pointerdown", function(e) {
+      // ✅ タッチ操作では範囲選択を開始しない（スマホ/タブレットでドラッグ中に選択モードに入らないようにする）
+      if (e.pointerType === "touch") return;
       // ✅ 追加：モバイルでは範囲選択しない
       if (window.matchMedia("(max-width: 640px)").matches) return;
       // board の空き部分をドラッグしたときだけ範囲選択開始
