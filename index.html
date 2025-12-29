@@ -557,6 +557,167 @@
       z-index: 9000;
     }
 
+    .detail-modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 30000;
+    }
+    .detail-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .detail-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 8, 20, 0.72);
+      backdrop-filter: blur(6px);
+    }
+    .detail-panel {
+      position: relative;
+      width: min(92vw, 760px);
+      max-height: 86vh;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(7, 10, 22, 0.98));
+      box-shadow: 0 30px 60px rgba(0,0,0,0.65);
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-close {
+      position: static;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: linear-gradient(135deg, rgba(157, 227, 255, 0.22), rgba(155, 178, 255, 0.22));
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+    }
+    .detail-header {
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(120deg, rgba(157,227,255,0.12), rgba(155,178,255,0.06));
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .detail-title-group {
+      display: grid;
+      gap: 4px;
+    }
+    .detail-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+    .detail-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+    }
+    .detail-preview {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+    }
+    .detail-aside {
+      display: grid;
+      justify-items: end;
+      gap: 8px;
+    }
+    .detail-preview-card {
+      width: 88px;
+      height: 128px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.55);
+      transform-origin: center center;
+    }
+    .detail-preview-note {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .detail-body {
+      padding: 14px 18px 18px;
+      overflow-y: auto;
+      display: grid;
+      gap: 12px;
+    }
+    .detail-section {
+      background: var(--glass);
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+    .detail-section h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .detail-section p,
+    .detail-section ul {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .detail-section ul {
+      padding-left: 18px;
+    }
+    .detail-category-list {
+      display: grid;
+      gap: 10px;
+    }
+    .detail-category {
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(8, 12, 24, 0.45);
+      padding: 10px 12px;
+    }
+    .detail-category h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+    }
+    .detail-category p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    @media (max-width: 640px) {
+      .detail-panel {
+        max-height: 88svh;
+      }
+      .detail-title {
+        font-size: 16px;
+      }
+      .detail-preview-card {
+        width: 72px;
+        height: 106px;
+      }
+    }
+
 
     @media (max-width: 900px) {
       body {
@@ -871,6 +1032,44 @@
     <div id="selectionBox"></div>
   </div>
 
+  <div id="detailModal" class="detail-modal" aria-hidden="true">
+    <div class="detail-backdrop" data-action="close"></div>
+    <div class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="detail-header">
+    <div class="detail-title-group">
+      <div class="detail-title" id="detailTitle"></div>
+      <div class="detail-sub" id="detailSubtitle"></div>
+    </div>
+    <div class="detail-aside">
+      <button class="detail-close" type="button" data-action="close">閉じる</button>
+      <div class="detail-preview">
+        <div id="detailPreviewCard" class="detail-preview-card"></div>
+        <div id="detailPreviewNote" class="detail-preview-note"></div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-body">
+
+        <div class="detail-section">
+          <h3>詳しい意味</h3>
+          <p id="detailMeaning"></p>
+        </div>
+        <div class="detail-section">
+          <h3>カードのストーリー</h3>
+          <p id="detailStory"></p>
+        </div>
+        <div class="detail-section">
+          <h3>この場合の解釈</h3>
+          <ul id="detailInterpretation"></ul>
+        </div>
+        <div class="detail-section">
+          <h3>カテゴリ別の解釈</h3>
+          <div id="detailCategories" class="detail-category-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ==== フルデッキ 78枚 ====
 
@@ -1052,6 +1251,15 @@
     var settingsToggleButton = document.getElementById("settingsToggleButton");
     var settingsCard = document.getElementById("settingsCard");
     var copyButton = document.getElementById("copyButton");
+    var detailModal = document.getElementById("detailModal");
+    var detailTitle = document.getElementById("detailTitle");
+    var detailSubtitle = document.getElementById("detailSubtitle");
+    var detailMeaning = document.getElementById("detailMeaning");
+    var detailStory = document.getElementById("detailStory");
+    var detailInterpretation = document.getElementById("detailInterpretation");
+    var detailCategories = document.getElementById("detailCategories");
+    var detailPreviewCard = document.getElementById("detailPreviewCard");
+    var detailPreviewNote = document.getElementById("detailPreviewNote");
 
 
     var drawnCards = []; // { id, name, element, faceUp, isReversed, x, y, inGraveyard, imagePath, revealOrder, lastTapTime, baseColor, selected, selectionOrder }
@@ -1060,6 +1268,33 @@
     var showMeaning = true;
     var isDebugMode = false;
     var suppressSelectionOnReveal = false;
+    var zCounter = 1000;
+    var detailLoadStarted = false;
+    var detailedLoaded = false;
+    var lastDetailCard = null;
+    var detailedMeanings = { upright: {}, reversed: {} };
+    var SUIT_THEMES = {
+      wands: "情熱・行動・意志",
+      cups: "感情・つながり・共感",
+      swords: "思考・判断・言葉",
+      pentacles: "現実・身体・仕事"
+    };
+    var RANK_THEMES = {
+      ace: "始まりの火種",
+      "2": "選択とバランス",
+      "3": "拡張と展望",
+      "4": "安定と土台",
+      "5": "葛藤と試練",
+      "6": "達成と共有",
+      "7": "防衛と粘り",
+      "8": "加速と流れ",
+      "9": "集約と成熟",
+      "10": "完成と負荷",
+      page: "好奇心と学び",
+      knight: "推進と挑戦",
+      queen: "成熟と受容",
+      king: "統率と責任"
+    };
 
     function isMobileLayout() {
       return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
@@ -1145,6 +1380,292 @@
       cardObj.meaningEl.style.top = top + "px";
     }
     function hideMeaningTooltip() {}
+
+    function extractKeywords(text) {
+      if (!text) return [];
+      return text.split(/[・、,，／/]/).map(function(part) {
+        return part.trim();
+      }).filter(function(part) {
+        return part.length > 0;
+      });
+    }
+
+    function getSuitLabel(suitKey) {
+      for (var i = 0; i < SUITS.length; i++) {
+        if (SUITS[i].key === suitKey) return SUITS[i].label;
+      }
+      return "";
+    }
+
+    function getRankLabel(rankKey) {
+      for (var i = 0; i < RANKS.length; i++) {
+        if (RANKS[i].key === rankKey) return RANKS[i].label;
+      }
+      return "";
+    }
+
+    function getCardMeta(cardObj) {
+      var id = cardObj.id || "";
+      if (id.indexOf("major-") === 0) {
+        return { arcana: "major", suitKey: null, rankKey: null };
+      }
+      var parts = id.split("-");
+      return { arcana: "minor", suitKey: parts[0] || null, rankKey: parts[1] || null };
+    }
+
+    function parseTarotMeanText(text) {
+      var data = { upright: {}, reversed: {} };
+      var lines = text.split(/\r?\n/);
+      var mode = null;
+      var currentId = null;
+      var labelMap = {
+        "全体の意味": "meaning",
+        "ストーリー": "story",
+        "恋愛": "love",
+        "仕事": "work",
+        "人生": "life"
+      };
+
+      lines.forEach(function(line) {
+        var trimmed = line.trim();
+        if (!trimmed) return;
+        if (trimmed.charCodeAt(0) === 0xfeff) {
+          trimmed = trimmed.slice(1);
+        }
+
+        if (trimmed.indexOf("[card:") === 0 && trimmed.lastIndexOf("]") === trimmed.length - 1) {
+          var parts = trimmed.slice(6, -1).trim().split(/\s+/);
+          if (parts.length >= 2) {
+            mode = (parts[1] || "").toLowerCase();
+            currentId = parts[0];
+            if (!data[mode]) data[mode] = {};
+            if (!data[mode][currentId]) data[mode][currentId] = {};
+          }
+          return;
+        }
+
+        var colonIndex = trimmed.indexOf("：");
+        if (colonIndex === -1) {
+          colonIndex = trimmed.indexOf(":");
+        }
+        if (colonIndex === -1 || !currentId || !mode) return;
+
+        var label = trimmed.slice(0, colonIndex);
+        var value = trimmed.slice(colonIndex + 1).trim();
+        var fieldKey = labelMap[label];
+        if (!fieldKey) return;
+
+        data[mode][currentId][fieldKey] = value;
+      });
+
+      return data;
+    }
+
+    function loadDetailedMeanings() {
+      if (detailLoadStarted) return;
+      detailLoadStarted = true;
+      fetch("tarotmean", { cache: "no-store" })
+        .then(function(response) {
+          if (!response.ok) throw new Error("failed to load tarotmean");
+          return response.arrayBuffer();
+        })
+        .then(function(buffer) {
+          var text = "";
+          try {
+            text = new TextDecoder("utf-8").decode(buffer);
+          } catch (_) {
+            text = "";
+          }
+          if (!text) {
+            text = String.fromCharCode.apply(null, new Uint8Array(buffer));
+          }
+          detailedMeanings = parseTarotMeanText(text);
+          detailedLoaded =
+            Object.keys(detailedMeanings.upright).length > 0 ||
+            Object.keys(detailedMeanings.reversed).length > 0;
+          if (detailModal && detailModal.classList.contains("open") && lastDetailCard) {
+            openDetailModal(lastDetailCard);
+          }
+        })
+        .catch(function() {
+          detailedLoaded = false;
+          detailLoadStarted = false;
+        });
+    }
+
+    function getDetailedEntry(cardObj) {
+      if (!cardObj || !cardObj.id) return null;
+      var mode = cardObj.isReversed ? "reversed" : "upright";
+      if (!detailedMeanings[mode]) return null;
+      return detailedMeanings[mode][cardObj.id] || null;
+    }
+
+    function buildInterpretationHints(keywords, isReversed) {
+      var main = keywords[0] || "テーマ";
+      var sub = keywords[1] || main;
+      var third = keywords[2] || sub;
+
+      if (isReversed) {
+        return [
+          "現状: 「" + main + "」が滞り、内側で揺らぎやすい時。",
+          "課題: 「" + sub + "」の偏りや不足を整える。",
+          "アドバイス: 「" + third + "」を小さく積み直す。"
+        ];
+      }
+      return [
+        "現状: 「" + main + "」が前に出やすいタイミング。",
+        "課題: 「" + sub + "」を活かす準備を整える。",
+        "アドバイス: 「" + third + "」を意識して動く。"
+      ];
+    }
+
+    function buildCategoryInterpretations(keywords, isReversed) {
+      var main = keywords[0] || "テーマ";
+      var sub = keywords[1] || main;
+
+      var love = isReversed
+        ? "恋愛は「" + main + "」が揺れやすい時期。焦らず距離感を整えると良い。"
+        : "恋愛は「" + main + "」を素直に共有すると進展しやすい。";
+      var work = isReversed
+        ? "仕事は「" + sub + "」が滞りやすい。優先度の整理が鍵。"
+        : "仕事は「" + sub + "」が追い風。具体的な一歩が成果につながる。";
+      var life = isReversed
+        ? "人生運は小さな見直しが必要。生活リズムを整えると流れが戻る。"
+        : "人生運は流れが上向き。「" + main + "」を基軸に行動すると広がる。";
+
+      return [
+        { title: "恋愛運", text: love },
+        { title: "仕事運", text: work },
+        { title: "人生運", text: life }
+      ];
+    }
+
+    function buildDetailPayload(cardObj) {
+      var meaning = getMeaningText(cardObj) || "";
+      var keywords = extractKeywords(meaning);
+      var main = keywords[0] || meaning || cardObj.name;
+      var meta = getCardMeta(cardObj);
+      var suitTheme = meta.suitKey ? SUIT_THEMES[meta.suitKey] : "人生の節目や魂の学び";
+      var rankTheme = meta.rankKey ? RANK_THEMES[meta.rankKey] : "";
+      var arcanaText = meta.arcana === "major" ? "大アルカナ" : "小アルカナ";
+      var suitLabel = meta.suitKey ? getSuitLabel(meta.suitKey) : "";
+      var rankLabel = meta.rankKey ? getRankLabel(meta.rankKey) : "";
+      var subtitleParts = [cardObj.isReversed ? "逆位置" : "正位置", arcanaText];
+
+      if (suitLabel) subtitleParts.push(suitLabel);
+      if (rankLabel) subtitleParts.push(rankLabel);
+
+      var autoDetail = "";
+      if (meaning) {
+        autoDetail += meaning + "。";
+      }
+      if (meta.arcana === "major") {
+        autoDetail += "大アルカナは人生の節目や大きなテーマを象徴します。";
+      } else {
+        autoDetail += "小アルカナは日常の場面や具体的な出来事を象徴します。";
+      }
+      autoDetail += suitTheme + "の領域で「" + main + "」が" + (cardObj.isReversed ? "滞りやすい" : "表に出やすい") + "流れです。";
+      if (keywords.length > 1) {
+        autoDetail += "特に「" + keywords.slice(0, 3).join("・") + "」が鍵になります。";
+      }
+      autoDetail += "質問の文脈によって読みは変化します。";
+
+      var autoStory = "";
+      if (meta.arcana === "major") {
+        autoStory = "「" + cardObj.name + "」は人生の物語の節目に現れるカードです。";
+      } else {
+        autoStory = "「" + cardObj.name + "」は「" + (rankTheme || "ある局面") + "」にあり、" + suitTheme + "のテーマが動く場面を描きます。";
+      }
+      autoStory += cardObj.isReversed
+        ? "逆位置では、そのテーマが内側で揺らぎやすく、見直しのタイミングになります。"
+        : "正位置では、そのテーマが前に進みやすく、勢いがつきやすい時期です。";
+
+      var autoCategories = buildCategoryInterpretations(keywords, cardObj.isReversed);
+      var detailEntry = detailedLoaded ? getDetailedEntry(cardObj) : null;
+
+      var detail = autoDetail;
+      var story = autoStory;
+      var categories = autoCategories;
+
+      if (detailEntry) {
+        if (detailEntry.meaning) detail = detailEntry.meaning;
+        if (detailEntry.story) story = detailEntry.story;
+        categories = [
+          { title: "恋愛運", text: detailEntry.love || autoCategories[0].text },
+          { title: "仕事運", text: detailEntry.work || autoCategories[1].text },
+          { title: "人生運", text: detailEntry.life || autoCategories[2].text }
+        ];
+      }
+
+      return {
+        subtitle: subtitleParts.join(" ・ "),
+        detail: detail,
+        story: story,
+        interpretation: buildInterpretationHints(keywords, cardObj.isReversed),
+        categories: categories
+      };
+    }
+
+    function setDetailModalOpen(isOpen) {
+      if (!detailModal) return;
+      detailModal.classList.toggle("open", !!isOpen);
+      detailModal.setAttribute("aria-hidden", isOpen ? "false" : "true");
+    }
+
+    function openDetailModal(cardObj) {
+      if (!detailModal || !cardObj || !cardObj.faceUp) return;
+      lastDetailCard = cardObj;
+      if (!detailedLoaded) {
+        loadDetailedMeanings();
+      }
+      var payload = buildDetailPayload(cardObj);
+      detailTitle.textContent = cardObj.name;
+      detailSubtitle.textContent = payload.subtitle;
+      detailMeaning.textContent = payload.detail;
+      detailStory.textContent = payload.story;
+
+      while (detailInterpretation.firstChild) {
+        detailInterpretation.removeChild(detailInterpretation.firstChild);
+      }
+      payload.interpretation.forEach(function(item) {
+        var li = document.createElement("li");
+        li.textContent = item;
+        detailInterpretation.appendChild(li);
+      });
+
+      if (detailPreviewCard) {
+        detailPreviewCard.style.backgroundImage = "url('" + cardObj.imagePath + "')";
+        detailPreviewCard.style.backgroundColor = cardObj.baseColor;
+        detailPreviewCard.style.transform = cardObj.isReversed ? "rotate(180deg)" : "rotate(0deg)";
+      }
+      if (detailPreviewNote) {
+        detailPreviewNote.textContent = cardObj.isReversed ? "逆位置" : "正位置";
+      }
+
+      if (detailCategories) {
+        while (detailCategories.firstChild) {
+          detailCategories.removeChild(detailCategories.firstChild);
+        }
+        payload.categories.forEach(function(item) {
+          var box = document.createElement("div");
+          box.className = "detail-category";
+          var title = document.createElement("h4");
+          title.textContent = item.title;
+          var text = document.createElement("p");
+          text.textContent = item.text;
+          box.appendChild(title);
+          box.appendChild(text);
+          detailCategories.appendChild(box);
+        });
+      }
+
+      setDetailModalOpen(true);
+    }
+
+    function closeDetailModal() {
+      lastDetailCard = null;
+      setDetailModalOpen(false);
+    }
 
     // 選択管理
     var currentSelection = []; // 選択中カードの配列
@@ -1263,6 +1784,7 @@
       selectionCounter = 0;
       revealCounter = 0;
       activeDrag = null;
+      zCounter = 1000;
       hideMeaningTooltip();
 
       // board の子要素のうち graveyard / selectionBox 以外を削除
@@ -1301,9 +1823,11 @@
           x = pileBaseX + n * step;
           y = pileBaseY - n * step;
         } else {
-          // PCは従来の散らし
-          x = pileBaseX + (Math.random() - 0.5) * 60;
-          y = pileBaseY + (Math.random() - 0.5) * 80;
+          // PC stack
+          var n = drawnCards.length;
+          var step = 0.35;
+          x = pileBaseX + n * step;
+          y = pileBaseY - n * step;
         }
 
         cardEl.style.left = x + "px";
@@ -1425,7 +1949,9 @@
 
             // 束のカードをドラッグ中の影に
             group.forEach(function(c) {
-              c.element.style.zIndex = Date.now().toString();
+              zCounter += 1;
+              if (zCounter > 9000) zCounter = 1000;
+              c.element.style.zIndex = zCounter.toString();
               c.element.style.boxShadow = "4px 14px 24px rgba(0,0,0,0.98)";
             });
 
@@ -1472,7 +1998,11 @@
               // ほぼ同じ場所で指が離れている → タップ扱い
               if (now - cardObj.lastTapTime < DOUBLE_TAP_THRESHOLD) {
                 // ダブルタップ判定 → このカードだけめくる
-                revealCard();
+                if (cardObj.faceUp) {
+                  openDetailModal(cardObj);
+                } else {
+                  revealCard();
+                }
                 cardObj.lastTapTime = 0;
               } else {
                 cardObj.lastTapTime = now;
@@ -1726,6 +2256,21 @@ copyButton.addEventListener("click", async function() {
       rebuildBoard();
     });
 
+    if (detailModal) {
+      detailModal.addEventListener("click", function(e) {
+        var action = e.target.getAttribute("data-action");
+        if (action === "close") {
+          closeDetailModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && detailModal && detailModal.classList.contains("open")) {
+        closeDetailModal();
+      }
+    });
+
     function updateSettingsVisibility() {
       var isHidden = settingsCard.classList.contains("hidden");
       if (isHidden) {
@@ -1888,6 +2433,7 @@ copyButton.addEventListener("click", async function() {
     // ページロード時に初期化
     window.addEventListener("load", function() {
       preloadDeckImages();
+      loadDetailedMeanings();
       applyTheme("night");
       rebuildBoard();
       settingsCard.classList.add("hidden");
